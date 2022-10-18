@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import functools
 import io
 import json
 import logging
@@ -84,6 +85,46 @@ TAGS= {
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
+# Proper (fast) Python implementations of Dan Bernstein's DJB2 32-bit hashing function
+#
+# DJB2 has terrible avalanching performance, though.
+# For example, it returns the same hash values for these strings: "xy", "yX", "z7".
+# I recommend using Murmur3 hash. Or, at least, FNV-1a or SDBM hashes below.
+
+djb2 = lambda x: functools.reduce(lambda x,c: 0xFFFFFFFF & (x*33 + c), x, 5381)
+sdbm = lambda x: functools.reduce(lambda x,c: 0xFFFFFFFF & (x*65599 + c), x, 0)
+fnv1a_32 = lambda x: functools.reduce(lambda x,c: 0xFFFFFFFF & ((x^c)*0x1000193), x, 0x811c9dc5)
+
+assert(hex(djb2(b'hello, world'))     == '0xb0e4250d')
+assert(hex(sdbm(b'hello, world'))     == '0xee6fb30c')
+assert(hex(fnv1a_32(b'hello, world')) == '0x4d0ea41d')
+
+# ...Versions for strings with regular functions
+
+def hash_djb2(s):
+    hash = 5381
+    for x in s:
+        hash = ((( hash << 5) + hash) + ord(x)) & 0xFFFFFFFF
+    return hash
+
+def hash_sdbm(s):
+    hash = 0
+    for x in s:
+        hash = ((hash << 16) + (hash << 6) + ord(x) - hash) & 0xFFFFFFFF
+    return hash
+
+def hash_fnv1a_32(s):
+    hash = 0x811c9dc5
+    for x in s:
+        hash = ((ord(x) ^ hash) * 0x01000193) & 0xFFFFFFFF
+    return hash
+
+assert(hex(hash_djb2(u'hello world, 世界')) == '0xa6bd702f')
+assert(hex(hash_sdbm(u'Åland Islands'))    == '0x5f5ba0ee')
+assert(hex(hash_fnv1a_32(u'Świętosław'))   == '0x16cf4524')
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
 def build_vocab(corpus_path):
     with open(corpus_path, 'r') as f:
         lines = f.readlines()
@@ -104,9 +145,19 @@ def build_vocab(corpus_path):
 def build_vocab2idx(corpus_path):
     vocab = build_vocab(corpus_path)
     vocab2idx = {}
+    tokids = set()
 
     for i, tok in enumerate(sorted(vocab)):
+        #~ hash32 = hash_fnv1a_32(tok)
+        #~ hash16 = ((hash32 >> 16) & 0xffff) ^ (hash32 & 0xffff)
+        #~ base = ((ord(tok[0]) & 0x14) << 27) + (hash16 << 11)
+        #~ tokid = base
+        #~ while tokid in tokids:
+        #~     tokid += 1
+        #~ tokids.add(tokid)
+
         vocab2idx[tok] = i
+
     return vocab2idx
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
