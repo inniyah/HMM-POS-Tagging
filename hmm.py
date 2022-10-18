@@ -6,9 +6,12 @@ from utils import get_word_tag, assign_unk, processing
 
 corpus_path = "WSJ_02-21.pos"
 def training_data(corpus_path):
-    
-    with open(corpus_path, 'r') as f:
-        training_corpus = f.readlines()
+    if isinstance(corpus_path, str):
+        corpus_path = [ corpus_path ]
+    training_corpus = []
+    for path in corpus_path:
+        with open(path, 'r') as f:
+            training_corpus.extend(f.readlines())
     return training_corpus
 
 def create_dictionaries(training_corpus, vocab2idx):

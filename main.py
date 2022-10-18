@@ -126,11 +126,21 @@ assert(hex(hash_fnv1a_32(u'Świętosław'))   == '0x16cf4524')
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 def build_vocab(corpus_path):
-    with open(corpus_path, 'r') as f:
-        lines = f.readlines()
+    if isinstance(corpus_path, str):
+        corpus_path = [ corpus_path ]
+
+    lines = []
+    for path in corpus_path:
+        logging.info(f"Reading file: '{path}'")
+        with open(path, 'r') as f:
+            new_lines = f.readlines()
+            lines.extend(new_lines)
+            logging.info(f"Data read from '{path}: {len(new_lines)} lines")
+    logging.info(f"Data read in total: {len(lines)} lines")
 
     tokens = [line.split('\t')[0] for line in lines]
     freqs = defaultdict(int)
+
     for tok in tokens:
         freqs[tok] += 1
 
@@ -166,7 +176,7 @@ def run_load(args):
     os.makedirs(os.path.join(MY_PATH, 'tmp'), exist_ok=True)
     logging.info("Building vocabulary index")
     vocab2idx = build_vocab2idx(CORPUS_PATH)
-    logging.info("Saving vocabulary index to 'vocab.pkl'")
+    logging.info(f"Saving vocabulary index ({len(vocab2idx)} elements) to 'vocab.pkl'")
     with open(os.path.join(MY_PATH, 'tmp', 'vocab.pkl'), 'wb') as f:
         pickle.dump(vocab2idx, f)
     with open(os.path.join(MY_PATH, 'tmp', 'vocab.json'), 'w') as f:
