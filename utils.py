@@ -1,12 +1,13 @@
 import string
+
 # punctuation characters
 punct = set(string.punctuation)
 
 # morphology rules used to assign unknown word tokens
-noun_suffix = ["action", "age", "ance", "cy", "dom", "ee", "ence", "er", "hood", "ion", "ism", "ist", "ity", "ling", "ment", "ness", "or", "ry", "scape", "ship", "ty"]
-verb_suffix = ["ate", "ify", "ise", "ize"]
-adj_suffix = ["able", "ese", "ful", "i", "ian", "ible", "ic", "ish", "ive", "less", "ly", "ous"]
-adv_suffix = ["ward", "wards", "wise"]
+NOUN_SUFFIX = ["action", "age", "ance", "cy", "dom", "ee", "ence", "er", "hood", "ion", "ism", "ist", "ity", "ling", "ment", "ness", "or", "ry", "scape", "ship", "ty"]
+VERB_SUFFIX = ["ate", "ify", "ise", "ize"]
+ADJ_SUFFIX  = ["able", "ese", "ful", "i", "ian", "ible", "ic", "ish", "ive", "less", "ly", "ous"]
+ADV_SUFFIX  = ["ward", "wards", "wise"]
 
 def get_word_tag(line, vocab):
     # check if a line is empty (just contains \n or \t), if yes
@@ -77,19 +78,19 @@ def assign_unk(tok):
         return "--unk_upper--"
 
     # Nouns
-    elif any(tok.endswith(suffix) for suffix in noun_suffix):
+    elif any(tok.endswith(suffix) for suffix in NOUN_SUFFIX):
         return "--unk_noun--"
 
     # Verbs
-    elif any(tok.endswith(suffix) for suffix in verb_suffix):
+    elif any(tok.endswith(suffix) for suffix in VERB_SUFFIX):
         return "--unk_verb--"
 
     # Adjectives
-    elif any(tok.endswith(suffix) for suffix in adj_suffix):
+    elif any(tok.endswith(suffix) for suffix in ADJ_SUFFIX):
         return "--unk_adj--"
 
     # Adverbs
-    elif any(tok.endswith(suffix) for suffix in adv_suffix):
+    elif any(tok.endswith(suffix) for suffix in ADV_SUFFIX):
         return "--unk_adv--"
 
     return "--unk--"
