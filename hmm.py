@@ -3,7 +3,6 @@ from collections import defaultdict
 import numpy as np
 
 from utils import get_word_tag, assign_unk, processing
-from build_vocabulary import build_vocab
 
 corpus_path = "WSJ_02-21.pos"
 def training_data(corpus_path):
@@ -11,14 +10,6 @@ def training_data(corpus_path):
     with open(corpus_path, 'r') as f:
         training_corpus = f.readlines()
     return training_corpus
-
-def build_vocab2idx(corpus_path):
-    vocab = build_vocab(corpus_path)
-    vocab2idx = {}
-
-    for i, tok in enumerate(sorted(vocab)):
-        vocab2idx[tok] = i
-    return vocab2idx
 
 def create_dictionaries(training_corpus, vocab2idx):
     emission_counts = defaultdict(int)

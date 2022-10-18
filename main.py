@@ -14,16 +14,15 @@ import traceback
 
 from pprint import pprint
 from datetime import datetime
+from collections import defaultdict
 
-from numpy import save
-from numpy import load
+from numpy import save, savetxt, load, loadtxt
 
 MY_PATH = os.path.normpath(os.path.abspath(os.path.dirname(__file__)))
 sys.path.append(os.path.abspath(os.path.join(MY_PATH, '.')))
 
-from hmm import build_vocab2idx, create_dictionaries, create_transition_matrix, create_emission_matrix, initialize, viterbi_forward, viterbi_backward, training_data
+from hmm import create_dictionaries, create_transition_matrix, create_emission_matrix, initialize, viterbi_forward, viterbi_backward, training_data
 from utils import get_word_tag, assign_unk, processing
-from build_vocabulary import build_vocab
 from syntok.tokenizer import Tokenizer
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -85,6 +84,33 @@ TAGS= {
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
+def build_vocab(corpus_path):
+    with open(corpus_path, 'r') as f:
+        lines = f.readlines()
+
+    tokens = [line.split('\t')[0] for line in lines]
+    freqs = defaultdict(int)
+    for tok in tokens:
+        freqs[tok] += 1
+
+    vocab = [k for k, v in freqs.items() if (v > 1 and k != '\n')]
+    unk_toks = ["--unk--", "--unk_adj--", "--unk_adv--", "--unk_digit--", "--unk_noun--", "--unk_punct--", "--unk_upper--", "--unk_verb--"]
+    vocab.extend(unk_toks)
+    vocab.append("--n--")
+    vocab.append(" ")
+    vocab = sorted(set(vocab))
+    return vocab
+
+def build_vocab2idx(corpus_path):
+    vocab = build_vocab(corpus_path)
+    vocab2idx = {}
+
+    for i, tok in enumerate(sorted(vocab)):
+        vocab2idx[tok] = i
+    return vocab2idx
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
 def run_load(args):
     os.makedirs(os.path.join(MY_PATH, 'tmp'), exist_ok=True)
     logging.info("Building vocabulary index")
@@ -92,6 +118,8 @@ def run_load(args):
     logging.info("Saving vocabulary index to 'vocab.pkl'")
     with open(os.path.join(MY_PATH, 'tmp', 'vocab.pkl'), 'wb') as f:
         pickle.dump(vocab2idx, f)
+    with open(os.path.join(MY_PATH, 'tmp', 'vocab.json'), 'w') as f:
+        json.dump(vocab2idx, f, indent=2)
     logging.info(f"Training the system with the data corpus in '{CORPUS_PATH}'")
     training_corpus = training_data(CORPUS_PATH)
     logging.info("Creating dictionaries")
@@ -99,12 +127,14 @@ def run_load(args):
     states = sorted(tag_counts.keys())
     alpha = ALPHA
     logging.info("Creating transition matrix")
-    A = create_transition_matrix(transition_counts, tag_counts, alpha)
+    transition_matrix = create_transition_matrix(transition_counts, tag_counts, alpha)
     logging.info("Creating emission matrix")
-    B = create_emission_matrix(emission_counts, tag_counts, list(vocab2idx), alpha)
+    emission_matrix = create_emission_matrix(emission_counts, tag_counts, list(vocab2idx), alpha)
     logging.info("Saving transition matrix and emission matrix")
-    save(os.path.join(MY_PATH, 'tmp', 'A.npy'), A)
-    save(os.path.join(MY_PATH, 'tmp', 'B.npy'), B)
+    save(os.path.join(MY_PATH, 'tmp', 'transition_matrix.npy'), transition_matrix)
+    #~ savetxt(os.path.join(MY_PATH, 'tmp', 'transition_matrix.txt'), transition_matrix)
+    save(os.path.join(MY_PATH, 'tmp', 'emission_matrix.npy'), emission_matrix)
+    #~ savetxt(os.path.join(MY_PATH, 'tmp', 'emission_matrix.txt'), emission_matrix)
     return 0
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -127,12 +157,12 @@ def run_predict(args):
     emission_counts, transition_counts, tag_counts = create_dictionaries(training_corpus, vocab2idx)
     states = sorted(tag_counts.keys())
     alpha = 0.001
-    A = create_transition_matrix(transition_counts, tag_counts, alpha)
-    B = create_emission_matrix(emission_counts, tag_counts, list(vocab2idx), alpha)
-    #~ A = load('A.npy')
-    #~ B = load('B.npy')
-    best_probs, best_paths = initialize(A, B, tag_counts, vocab2idx, states, prep_tokens)
-    best_probs, best_paths = viterbi_forward(A, B, prep_tokens, best_probs, best_paths, vocab2idx)
+    transition_matrix = create_transition_matrix(transition_counts, tag_counts, alpha)
+    emission_matrix = create_emission_matrix(emission_counts, tag_counts, list(vocab2idx), alpha)
+    #~ transition_matrix = load('transition_matrix.npy')
+    #~ emission_matrix = load('emission_matrix.npy')
+    best_probs, best_paths = initialize(transition_matrix, emission_matrix, tag_counts, vocab2idx, states, prep_tokens)
+    best_probs, best_paths = viterbi_forward(transition_matrix, emission_matrix, prep_tokens, best_probs, best_paths, vocab2idx)
     pred = viterbi_backward(best_probs, best_paths, states)
 
     res = []
