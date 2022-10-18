@@ -1,19 +1,18 @@
-import numpy as np
-from numpy import load
 import argparse
 import json
 import sys
-import pickle
-#~ from nltk import word_tokenize
-from hmm import build_vocab2idx, create_dictionaries, create_transition_matrix, create_emission_matrix, initialize, viterbi_forward, viterbi_backward
-from utils import processing
-from hmm import training_data
-
-from syntok.tokenizer import Tokenizer
 
 from pprint import pprint
 
-corpus_path = "WSJ_02-21.pos"
+import numpy as np
+from numpy import load
+
+from syntok.tokenizer import Tokenizer
+from hmm import build_vocab2idx, create_dictionaries, create_transition_matrix, create_emission_matrix, initialize, viterbi_forward, viterbi_backward
+from hmm import training_data
+from utils import processing
+
+CORPUS_PATH = "data/WSJ_02-21.pos"
 alpha = 0.001
 
 def parse_argument():
@@ -21,23 +20,20 @@ def parse_argument():
     parser.add_argument('--sent', help='Enter your sentence.')
     return parser.parse_args()
 
-def predict():
-    args = parse_argument()
-    sample = args.sent
-    sample = str(sample) + ' #'
+def predict(sample):
     #~ pprint(sample)
     #~ tokens = word_tokenize(sample)
     tok = Tokenizer()
     tokens = [token.value for token in tok.tokenize(sample)]
     #~ pprint(tokens)
-    #~ vocab2idx = build_vocab2idx(corpus_path)
-    file = open('vocab.pkl', 'rb')
-    vocab2idx = pickle.load(file)
-    file.close()
+    vocab2idx = build_vocab2idx(CORPUS_PATH)
+    #~ file = open('vocab.pkl', 'rb')
+    #~ vocab2idx = pickle.load(file)
+    #~ file.close()
     #~ pprint(vocab2idx)
     
     prep_tokens = processing(vocab2idx, tokens)
-    training_corpus = training_data(corpus_path)
+    training_corpus = training_data(CORPUS_PATH)
     emission_counts, transition_counts, tag_counts = create_dictionaries(training_corpus, vocab2idx)
     states = sorted(tag_counts.keys())
     alpha = 0.001
@@ -53,5 +49,9 @@ def predict():
     for tok, tag in zip(prep_tokens[:-1], pred[:-1]):
         res.append((tok, tag))
     print(res)
+
 if __name__ == "__main__":
-    predict()
+    args = parse_argument()
+    sample = args.sent
+    sample = str(sample)
+    predict(sample)
