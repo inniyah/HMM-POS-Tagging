@@ -1,9 +1,7 @@
-import argparse
-import numpy as np
-import pandas as pd
-import math
-from nltk import word_tokenize
 from collections import defaultdict
+
+import numpy as np
+
 from utils import get_word_tag, assign_unk, processing
 from build_vocabulary import build_vocab
 

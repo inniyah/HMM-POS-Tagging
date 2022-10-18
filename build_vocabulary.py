@@ -1,7 +1,6 @@
-import string
 from collections import defaultdict
-from utils import get_word_tag
-from utils import assign_unk
+
+from utils import get_word_tag, assign_unk
 
 def build_vocab(corpus_path):
     with open(corpus_path, 'r') as f:
